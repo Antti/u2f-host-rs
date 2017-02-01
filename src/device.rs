@@ -89,10 +89,11 @@ impl <'a> Device<'a> {
         use byteorder::{BigEndian, ReadBytesExt};
 
         let nonce = &[0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1];
-        let response = self.request(0x06, nonce);
-        let mut rdr = Cursor::new(response);
-        rdr.set_position(7); // skip frame header
-        let mut nonce_response = [0u8; 8];
+        let data = self.request(0x06, nonce);
+        println!("Received init frame response: {:?}", data);
+
+        let mut rdr = Cursor::new(data);
+        let mut nonce_response = Vec::with_capacity(8);
         rdr.read_exact(&mut nonce_response).unwrap();
         // println!("Nonce response: {:?}", nonce_response);
         // TODO: Make sure nonce response_matches nonce.
@@ -121,11 +122,15 @@ impl <'a> Device<'a> {
         self.request(0x01, data);
     }
 
-    fn request<T: AsRef<[u8]>>(&mut self, cmd: u8, data: T) -> Vec<u8> {
+    /// High level U2F device api to perform HID command and read response.
+    /// The data is correctly framed (in 64kb frames) and sent over the HID interface.
+    /// The response is read from one or more frames, validated and the data is returned back
+    pub fn request<T: AsRef<[u8]>>(&mut self, cmd: u8, data: T) -> Vec<u8> {
         self.send_cmd(cmd, data);
-        self.receive_response()
+        self.read_response(cmd)
     }
 
+    /// High level send cmd with data api
     fn send_cmd<T: AsRef<[u8]>>(&mut self, cmd: u8, data: T) {
         let data = data.as_ref();
         let mut datasent = 0;
@@ -153,12 +158,47 @@ impl <'a> Device<'a> {
         }
     }
 
-    fn receive_response(&mut self) -> Vec<u8> {
+    /// High level read response
+    fn read_response(&mut self, expected_cmd: u8) -> Vec<u8> {
+        let init_frame = self.read_frame();
+        let (cmd, total_data_len, mut data) = match init_frame.frame_content {
+            U2FFrameContent::Init { cmd, data_len, data } => (cmd, data_len, data),
+            _ => panic!("Expected init frame")
+        };
+        if cmd != expected_cmd {
+            panic!("Unexpected cmd")
+        }
+        let mut current_sequence = 0;
+        let curr_data_len = cmp::min(data.len() as u16, total_data_len);
+        data.reserve((total_data_len - curr_data_len) as usize);
+        while data.len() < total_data_len as usize {
+            let cont_frame = self.read_frame();
+            let (seq, mut cont_data) = match cont_frame.frame_content {
+                U2FFrameContent::Cont { seq, data } => (seq, data),
+                _ => panic!("Expected init frame")
+            };
+            if seq == current_sequence {
+                data.append(&mut cont_data);
+            } else {
+                panic!("Sequence error")
+            }
+            current_sequence += 1;
+        }
+        data.resize(total_data_len as usize, 0); // Strip remaining 0s if any
+        data
+    }
+
+    fn read_frame(&mut self) -> U2FFrame {
         let mut buffer = vec![0u8; 64];
         let res = self.handle.data().read(&mut buffer, Duration::from_millis(500)).unwrap();
-        println!("Response: {:?}", res);
-        println!("Response data: {:?}", buffer);
-        buffer
+        match res {
+            Some(data_len) if data_len == 64 => {}
+            Some(_) => panic!("Unexpected data len"),
+            None => panic!("Error reading from HID device")
+        }
+        let frame = U2FFrame::from_bytes(buffer);
+        println!("Received frame: {:?}", frame);
+        frame
     }
 
     fn send_frame(&mut self, frame: &U2FFrame) {
