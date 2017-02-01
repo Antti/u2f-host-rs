@@ -6,3 +6,4 @@ authors = ["Andrii Dmytrenko <refresh.xss@gmail.com>"]
 [dependencies]
 hid = { path = "../rust-hid" }
 byteorder = "*"
+error-chain = "*"
