@@ -2,11 +2,12 @@
 
 extern crate hid;
 extern crate byteorder;
-#[macro_use]
-extern crate error_chain;
+#[macro_use] extern crate error_chain;
 
 mod device;
 mod u2f_frame;
+mod u2f_hid_framed_transport;
+
 mod errors {
     use hid;
     use std;
