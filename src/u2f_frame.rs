@@ -14,26 +14,26 @@ pub struct U2FFrame {
 }
 
 impl U2FFrame {
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Result<Vec<u8>> {
         use std::io::Write;
         use byteorder::{BigEndian, WriteBytesExt};
 
         let mut bytes = vec![];
-        bytes.write_u32::<BigEndian>(self.channel_id).unwrap();
+        bytes.write_u32::<BigEndian>(self.channel_id)?;
 
         match self.frame_content {
             U2FFrameContent::Init { cmd, data_len, ref data } => {
-                bytes.write_u8(cmd | 0x80).unwrap();
-                bytes.write_u16::<BigEndian>(data_len).unwrap();
-                bytes.write_all(&data).unwrap();
+                bytes.write_u8(cmd | 0x80)?;
+                bytes.write_u16::<BigEndian>(data_len)?;
+                bytes.write_all(&data)?;
             },
             U2FFrameContent::Cont { seq, ref data } => {
-                bytes.write_u8(seq & !0x80u8).unwrap();
-                bytes.write_all(&data).unwrap();
+                bytes.write_u8(seq & !0x80u8)?;
+                bytes.write_all(&data)?;
             }
         }
         bytes.resize(64, 0);
-        bytes
+        Ok(bytes)
     }
 
     pub fn from_bytes<T: AsRef<[u8]>>(data: T) -> Result<Self> {

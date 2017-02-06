@@ -93,7 +93,7 @@ pub trait U2FHidFramedTransport {
     }
 
     fn send_frame(&mut self, frame: &U2FFrame) -> Result<()> {
-        let mut frame_bytes = frame.as_bytes();
+        let mut frame_bytes = frame.as_bytes()?;
         frame_bytes.insert(0, 0); // TODO: Check if report 0 correct
         println!("Sending frame: {:?}", frame_bytes);
         self.data_write(frame_bytes).map(|_| ()).map_err(|e| e.into())

@@ -1,7 +1,7 @@
 use hid;
-use super::errors::*;
-use super::HidCmd;
-use super::u2f_hid_framed_transport::U2FHidFramedTransport;
+use errors::*;
+use HidCmd;
+use u2f_hid_framed_transport::U2FHidFramedTransport;
 use std::marker::PhantomData;
 use std::time::Duration;
 use std::convert::From;
@@ -9,13 +9,14 @@ use std::fmt;
 
 const FIDO_USAGE_PAGE : u16 = 0xf1d0;
 const FIDO_USAGE_U2FHID : u16 = 0x01;
+const BROADCAST_CHANNEL_ID : u32 = 0xffffffff;
 
 #[derive(Debug)]
 pub struct HIDDeviceInfo {
     pub vendor_id: u16,
     pub product_id: u16,
-    pub manufacturer_string: String,
-    pub product_string: String
+    pub manufacturer_string: Option<String>,
+    pub product_string: Option<String>
 }
 
 #[derive(Debug)]
@@ -27,14 +28,12 @@ pub struct U2FDeviceInfo {
     pub cap_flags: u8
 }
 
-// TODO: Store hid::Device here, not just handle.
 // Split Device into 2 parts: FoundDevice (not inited, channel 0xffffffff) & Device(inited)
 pub struct Device<'a> {
     handle: hid::Handle,
     channel_id: u32,
     pub hid_device_info: HIDDeviceInfo,
 
-    _hid_device: hid::Device<'a>,
     _marker: PhantomData<&'a ()>,
 }
 
@@ -60,19 +59,24 @@ impl<'a> Iterator for Devices<'a> {
                         let hid_device_info = HIDDeviceInfo {
                             vendor_id: hid_device.vendor_id(),
                             product_id: hid_device.product_id(),
-                            manufacturer_string: hid_device.manufacturer_string().unwrap(),
-                            product_string: hid_device.product_string().unwrap()
+                            manufacturer_string: hid_device.manufacturer_string(),
+                            product_string: hid_device.product_string()
                         };
-                        let handle = hid_device.open().unwrap();
-                        let dev = Device {
-                            handle: handle,
-                            hid_device_info: hid_device_info,
-                            channel_id: 0xffffffff, // Broadcast
-                            _hid_device: hid_device, // for the drop check
-                            _marker: PhantomData
-                        };
-                        println!("Discovered U2F Device: {:?}", dev.hid_device_info);
-                        return Some(dev);
+                        match hid_device.open() {
+                            Ok(handle) => {
+                                let dev = Device {
+                                    handle: handle,
+                                    hid_device_info: hid_device_info,
+                                    channel_id: BROADCAST_CHANNEL_ID, // Broadcast
+                                    _marker: PhantomData
+                                };
+                                println!("Discovered U2F Device: {:?}", dev.hid_device_info);
+                                return Some(dev);
+                            },
+                            Err(err) => {
+                                println!("Error opening HID device: {:?}", err)
+                            }
+                        }
                     }
                 },
                 None => return None
@@ -102,12 +106,11 @@ impl <'a> fmt::Debug for Device<'a> {
 }
 
 impl <'a> Device<'a> {
-    pub fn init(&mut self) -> Result<U2FDeviceInfo> {
+    pub fn init(&mut self, nonce: [u8; 8]) -> Result<U2FDeviceInfo> {
         use std::io::{Read, Cursor};
         use byteorder::{BigEndian, ReadBytesExt};
 
-        let nonce = &[0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1];
-        let data = self.request(HidCmd::Init as u8, nonce)?;
+        let data = self.request(HidCmd::Init as u8, &nonce as &[u8])?;
         println!("Received init frame response: {:?}", data);
 
         let mut rdr = Cursor::new(data);
@@ -143,8 +146,9 @@ impl <'a> Device<'a> {
     /// High level U2F device api to perform HID command and read response.
     /// The data is correctly framed (in 64kb frames) and sent over the HID interface.
     /// The response is read from one or more frames, validated and the data is returned back
-    pub fn request<T: AsRef<[u8]>>(&mut self, cmd: u8, data: T) -> Result<Vec<u8>> {
+    pub fn request<T: AsRef<[u8]> + fmt::Debug>(&mut self, cmd: u8, data: T) -> Result<Vec<u8>> {
         let channel_id = self.channel_id;
+        println!("Sending cmd: 0x{:x}, data: {:?}", cmd, data);
         self.send_cmd(cmd, channel_id, data)?;
         self.read_response(cmd)
     }
