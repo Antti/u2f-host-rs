@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::cmp;
 use std::time::Duration;
 use std::convert::From;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct HIDDeviceInfo {
@@ -85,6 +86,15 @@ impl <'a> Manager<'a> {
 
     pub fn discover(&'a self) -> Devices<'a> {
         Devices { hid_devices: self.hid_manager.devices() }
+    }
+}
+
+impl <'a> fmt::Debug for Device<'a> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_struct("Device")
+            .field("channel_id", &self.channel_id)
+            .field("hid_device_info", &self.hid_device_info)
+            .finish()
     }
 }
 
