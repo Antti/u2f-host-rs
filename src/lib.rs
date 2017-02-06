@@ -27,7 +27,7 @@ mod errors {
     }
 }
 
-pub use device::Manager;
+pub use device::{Device, Devices, Manager, HIDDeviceInfo, U2FDeviceInfo};
 pub use errors::*;
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum HidCmd {

@@ -34,6 +34,7 @@ pub struct Device<'a> {
     channel_id: u32,
     pub hid_device_info: HIDDeviceInfo,
 
+    _hid_device: hid::Device<'a>,
     _marker: PhantomData<&'a ()>,
 }
 
@@ -56,15 +57,18 @@ impl<'a> Iterator for Devices<'a> {
             match hid_device {
                 Some(hid_device) => {
                     if hid_device.usage_page() == FIDO_USAGE_PAGE && hid_device.usage() == FIDO_USAGE_U2FHID {
+                        let hid_device_info = HIDDeviceInfo {
+                            vendor_id: hid_device.vendor_id(),
+                            product_id: hid_device.product_id(),
+                            manufacturer_string: hid_device.manufacturer_string().unwrap(),
+                            product_string: hid_device.product_string().unwrap()
+                        };
+                        let handle = hid_device.open().unwrap();
                         let dev = Device {
-                            handle: hid_device.open().unwrap(),
-                            hid_device_info: HIDDeviceInfo {
-                                vendor_id: hid_device.vendor_id(),
-                                product_id: hid_device.product_id(),
-                                manufacturer_string: hid_device.manufacturer_string().unwrap(),
-                                product_string: hid_device.product_string().unwrap()
-                            },
+                            handle: handle,
+                            hid_device_info: hid_device_info,
                             channel_id: 0xffffffff, // Broadcast
+                            _hid_device: hid_device, // for the drop check
                             _marker: PhantomData
                         };
                         println!("Discovered U2F Device: {:?}", dev.hid_device_info);
