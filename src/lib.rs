@@ -28,6 +28,15 @@ mod errors {
 
 pub use device::Manager;
 pub use errors::*;
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum HidCmd {
+    Ping = 0x01,
+    Msg = 0x03,
+    Lock = 0x04,
+    Init = 0x06,
+    Wink = 0x08,
+    Error = 0x3f
+}
 
 #[cfg(test)]
 mod tests {

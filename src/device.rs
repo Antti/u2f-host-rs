@@ -1,6 +1,7 @@
 use hid;
 use super::u2f_frame::*;
 use super::errors::*;
+use super::HidCmd;
 use std::marker::PhantomData;
 use std::cmp;
 use std::time::Duration;
@@ -93,7 +94,7 @@ impl <'a> Device<'a> {
         use byteorder::{BigEndian, ReadBytesExt};
 
         let nonce = &[0x8, 0x7, 0x6, 0x5, 0x4, 0x3, 0x2, 0x1];
-        let data = self.request(0x06, nonce)?;
+        let data = self.request(HidCmd::Init as u8, nonce)?;
         println!("Received init frame response: {:?}", data);
 
         let mut rdr = Cursor::new(data);
@@ -118,12 +119,12 @@ impl <'a> Device<'a> {
 
     // TODO: Check capabilities first
     pub fn wink(&mut self) -> Result<()> {
-        self.request(0x08, []).map(|_| ()).map_err(From::from)
+        self.request(HidCmd::Wink as u8, []).map(|_| ()).map_err(From::from)
     }
 
     pub fn ping<T: AsRef<[u8]>>(&mut self, data: T) -> Result<Vec<u8>> {
         let data = data.as_ref();
-        Ok(self.request(0x01, data)?)
+        Ok(self.request(HidCmd::Ping as u8, data)?)
     }
 
     /// High level U2F device api to perform HID command and read response.
