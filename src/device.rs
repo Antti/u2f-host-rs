@@ -114,7 +114,7 @@ impl <'a> Device<'a> {
         println!("Received init frame response: {:?}", data);
 
         let mut rdr = Cursor::new(data);
-        let mut nonce_response = Vec::with_capacity(8);
+        let mut nonce_response = vec![0u8; 8];
         rdr.read_exact(&mut nonce_response)?;
         // println!("Nonce response: {:?}", nonce_response);
         // TODO: Make sure nonce response_matches nonce.

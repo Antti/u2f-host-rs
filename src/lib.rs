@@ -6,6 +6,7 @@ extern crate byteorder;
 
 mod device;
 mod u2f_frame;
+mod apdu;
 mod u2f_hid_framed_transport;
 
 mod errors {
@@ -23,12 +24,18 @@ mod errors {
                 description("protocol error")
                 display("protocol error: '{}'", t)
             }
+            APDUError(error_code: u16) {
+                description("APDU error")
+                display("error code: {}", error_code)
+            }
         }
     }
 }
 
 pub use device::{Device, Devices, Manager, HIDDeviceInfo, U2FDeviceInfo};
 pub use errors::*;
+pub use apdu::APDU;
+
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum HidCmd {
     Ping = 0x01,

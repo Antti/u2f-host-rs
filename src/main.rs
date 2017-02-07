@@ -11,13 +11,9 @@ fn main() {
         let init_result = dev.init(nonce);
         println!("Init result: {:?}", init_result);
         dev.wink().expect("Cant wink");
-        // dev.ping([1,2,3,4]);
-    }
-    for mut dev in manager.discover() {
-        let init_result = dev.init(nonce);
-        println!("Init result: {:?}", init_result);
         let mut apdu = APDU::new(dev);
-        apdu.send_apdu(1, 1, vec![0]).expect("Cant send APDU");
-        // dev.ping([1,2,3,4]);
+        let response = apdu.send_apdu(0x03, 0, 0, vec![]).expect("Cant send APDU");
+        println!("APDU Response: {:?}", response);
+        println!("APDU Response: {:?}", String::from_utf8_lossy(&response));
     }
 }
