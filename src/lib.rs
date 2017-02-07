@@ -24,9 +24,9 @@ mod errors {
                 description("protocol error")
                 display("protocol error: '{}'", t)
             }
-            APDUError(error_code: u16) {
-                description("APDU error")
-                display("error code: {}", error_code)
+            APDUError(error_code: u16, desc: &'static str) {
+                description(desc)
+                display("error code: {}, desc: {}", error_code, desc)
             }
         }
     }
