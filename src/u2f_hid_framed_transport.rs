@@ -62,7 +62,8 @@ pub trait U2FHidFramedTransport {
         datasent += frame_data.len();
 
         while data.len() > datasent {
-            let frame_data = &data[datasent .. cmp::min(data.len() - datasent, 59)];
+            // println!("datasent: {}, frame_data.len(): {}, data.len(): {}", datasent, frame_data.len(), data.len());
+            let frame_data = &data[datasent .. datasent + cmp::min(data.len() - datasent, 59)];
             let frame = U2FFrame {
                channel_id: channel_id,
                frame_content: U2FFrameContent::Cont { seq: sequence, data: frame_data.to_vec() }
