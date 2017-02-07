@@ -45,6 +45,14 @@ pub enum HidCmd {
     Wink = 0x08,
     Error = 0x3f
 }
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum U2FINS {
+    Register = 0x01,
+    Authenticate = 0x02,
+    Version = 0x03,
+    VendorFirst = 0x40,
+    VendorLast = 0x7f
+}
 
 #[cfg(test)]
 mod tests {
