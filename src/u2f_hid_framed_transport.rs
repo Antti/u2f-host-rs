@@ -62,7 +62,7 @@ pub trait U2FHidFramedTransport {
         datasent += frame_data.len();
 
         while data.len() > datasent {
-            // println!("datasent: {}, frame_data.len(): {}, data.len(): {}", datasent, frame_data.len(), data.len());
+            debug!("datasent: {}, frame_data.len(): {}, data.len(): {}", datasent, frame_data.len(), data.len());
             let frame_data = &data[datasent .. datasent + cmp::min(data.len() - datasent, 59)];
             let frame = U2FFrame {
                channel_id: channel_id,
@@ -89,14 +89,13 @@ pub trait U2FHidFramedTransport {
             None => return Err(ErrorKind::Protocol("Nothing was returned from device".to_string()).into())
         }
         let frame = U2FFrame::from_bytes(buffer)?;
-        println!("Received frame: {:?}", frame);
+        debug!("Received frame: {:?}", frame);
         Ok(frame)
     }
 
     fn send_frame(&mut self, frame: &U2FFrame) -> Result<()> {
-        println!("Sending frame: {:?}", frame);
+        debug!("Sending frame: {:?}", frame);
         let mut frame_bytes = frame.as_bytes()?;
-        // println!("Frame bytes: {:?}", frame_bytes);
         frame_bytes.insert(0, 0); // TODO: Check if report 0 correct
         self.data_write(frame_bytes).map(|_| ()).map_err(|e| e.into())
     }

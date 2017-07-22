@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Andrii Dmytrenko <refresh.xss@gmail.com>"]
 
 [dependencies]
-hid = { path = "../rust-hid" }
+hid = "*"
 byteorder = "*"
 error-chain = "*"
+rust-crypto = "*"
+log = "*"
+# enum_primitive = "*"

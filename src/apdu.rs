@@ -38,10 +38,10 @@ impl <'a> APDU<'a> {
         response.resize(response_len - 2, 0);
         match sw {
             0x9000 => Ok(response), // SW_NO_ERROR
-            0x6984 => Err(ErrorKind::APDUError(sw, "wrong data").into()), // SW_WRONG_DATA
-            0x6985 => Err(ErrorKind::APDUError(sw, "conditions not satisfied").into()), // SW_CONDITIONS_NOT_SATISFIED
-            0x6d00 => Err(ErrorKind::APDUError(sw, "ins not supported").into()), // SW_INS_NOT_SUPPORTED
-            0x6e00 => Err(ErrorKind::APDUError(sw, "cla not supported").into()), // SW_CLA_NOT_SUPPORTED
+            0x6984 => Err(ErrorKind::APDUError(sw, "wrong data", response).into()), // SW_WRONG_DATA
+            0x6985 => Err(ErrorKind::APDUError(sw, "conditions not satisfied", response).into()), // SW_CONDITIONS_NOT_SATISFIED
+            0x6d00 => Err(ErrorKind::APDUError(sw, "ins not supported", response).into()), // SW_INS_NOT_SUPPORTED
+            0x6e00 => Err(ErrorKind::APDUError(sw, "cla not supported", response).into()), // SW_CLA_NOT_SUPPORTED
             _ => Err(ErrorKind::Protocol(format!("Unknown APDU status code: {}", sw)).into())
         }
     }

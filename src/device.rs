@@ -70,11 +70,11 @@ impl<'a> Iterator for Devices<'a> {
                                     channel_id: BROADCAST_CHANNEL_ID, // Broadcast
                                     _marker: PhantomData
                                 };
-                                println!("Discovered U2F Device: {:?}", dev.hid_device_info);
+                                debug!("Discovered U2F Device: {:?}", dev.hid_device_info);
                                 return Some(dev);
                             },
                             Err(err) => {
-                                println!("Error opening HID device: {:?}", err)
+                                error!("Error opening HID device: {:?}", err)
                             }
                         }
                     }
@@ -111,12 +111,12 @@ impl <'a> Device<'a> {
         use byteorder::{BigEndian, ReadBytesExt};
 
         let data = self.request(HidCmd::Init as u8, &nonce as &[u8])?;
-        println!("Received init frame response: {:?}", data);
+        debug!("Received init frame response: {:?}", data);
 
         let mut rdr = Cursor::new(data);
         let mut nonce_response = vec![0u8; 8];
         rdr.read_exact(&mut nonce_response)?;
-        // println!("Nonce response: {:?}", nonce_response);
+        debug!("Nonce response: {:?}", nonce_response);
         // TODO: Make sure nonce response_matches nonce.
         self.channel_id = rdr.read_u32::<BigEndian>()?;
         let protocol_version = rdr.read_u8()?;
@@ -148,7 +148,7 @@ impl <'a> Device<'a> {
     /// The response is read from one or more frames, validated and the data is returned back
     pub fn request<T: AsRef<[u8]> + fmt::Debug>(&mut self, cmd: u8, data: T) -> Result<Vec<u8>> {
         let channel_id = self.channel_id;
-        println!("Sending cmd: 0x{:x}, data: {:?}", cmd, data);
+        debug!("Sending cmd: 0x{:x}, data: {:?}", cmd, data);
         self.send_cmd(cmd, channel_id, data)?;
         self.read_response(cmd)
     }
