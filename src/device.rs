@@ -7,16 +7,16 @@ use std::time::Duration;
 use std::convert::From;
 use std::fmt;
 
-const FIDO_USAGE_PAGE : u16 = 0xf1d0;
-const FIDO_USAGE_U2FHID : u16 = 0x01;
-const BROADCAST_CHANNEL_ID : u32 = 0xffffffff;
+const FIDO_USAGE_PAGE: u16 = 0xf1d0;
+const FIDO_USAGE_U2FHID: u16 = 0x01;
+const BROADCAST_CHANNEL_ID: u32 = 0xffffffff;
 
 #[derive(Debug)]
 pub struct HIDDeviceInfo {
     pub vendor_id: u16,
     pub product_id: u16,
     pub manufacturer_string: Option<String>,
-    pub product_string: Option<String>
+    pub product_string: Option<String>,
 }
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ pub struct U2FDeviceInfo {
     pub version_major: u8,
     pub version_minor: u8,
     pub version_build: u8,
-    pub cap_flags: u8
+    pub cap_flags: u8,
 }
 
 // Split Device into 2 parts: FoundDevice (not inited, channel 0xffffffff) & Device(inited)
@@ -40,7 +40,7 @@ pub struct Device<'a> {
 pub struct Manager<'a> {
     hid_manager: hid::Manager,
 
-    _marker: PhantomData<&'a ()>
+    _marker: PhantomData<&'a ()>,
 }
 
 pub struct Devices<'a> {
@@ -48,9 +48,9 @@ pub struct Devices<'a> {
 }
 
 impl<'a> Iterator for Devices<'a> {
-	type Item = Device<'a>;
+    type Item = Device<'a>;
 
-	fn next(&mut self) -> Option<Self::Item> {
+    fn next(&mut self) -> Option<Self::Item> {
         loop {
             let hid_device = self.hid_devices.next();
             match hid_device {
@@ -60,7 +60,7 @@ impl<'a> Iterator for Devices<'a> {
                             vendor_id: hid_device.vendor_id(),
                             product_id: hid_device.product_id(),
                             manufacturer_string: hid_device.manufacturer_string(),
-                            product_string: hid_device.product_string()
+                            product_string: hid_device.product_string(),
                         };
                         match hid_device.open() {
                             Ok(handle) => {
@@ -68,27 +68,28 @@ impl<'a> Iterator for Devices<'a> {
                                     handle: handle,
                                     hid_device_info: hid_device_info,
                                     channel_id: BROADCAST_CHANNEL_ID, // Broadcast
-                                    _marker: PhantomData
+                                    _marker: PhantomData,
                                 };
                                 debug!("Discovered U2F Device: {:?}", dev.hid_device_info);
                                 return Some(dev);
-                            },
-                            Err(err) => {
-                                error!("Error opening HID device: {:?}", err)
                             }
+                            Err(err) => error!("Error opening HID device: {:?}", err),
                         }
                     }
-                },
-                None => return None
+                }
+                None => return None,
             }
         }
-	}
+    }
 }
 
-impl <'a> Manager<'a> {
+impl<'a> Manager<'a> {
     pub fn new() -> Result<Self> {
         let hid_manager = hid::init()?;
-        Ok(Manager { hid_manager: hid_manager, _marker: PhantomData })
+        Ok(Manager {
+               hid_manager: hid_manager,
+               _marker: PhantomData,
+           })
     }
 
     pub fn discover(&'a self) -> Devices<'a> {
@@ -96,7 +97,7 @@ impl <'a> Manager<'a> {
     }
 }
 
-impl <'a> fmt::Debug for Device<'a> {
+impl<'a> fmt::Debug for Device<'a> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Device")
             .field("channel_id", &self.channel_id)
@@ -105,7 +106,7 @@ impl <'a> fmt::Debug for Device<'a> {
     }
 }
 
-impl <'a> Device<'a> {
+impl<'a> Device<'a> {
     pub fn init(&mut self, nonce: [u8; 8]) -> Result<U2FDeviceInfo> {
         use std::io::{Read, Cursor};
         use byteorder::{BigEndian, ReadBytesExt};
@@ -125,12 +126,12 @@ impl <'a> Device<'a> {
         let version_build = rdr.read_u8()?;
         let cap_flags = rdr.read_u8()?;
         Ok(U2FDeviceInfo {
-            protocol_version: protocol_version,
-            version_major: version_major,
-            version_minor: version_minor,
-            version_build: version_build,
-            cap_flags: cap_flags
-        })
+               protocol_version: protocol_version,
+               version_major: version_major,
+               version_minor: version_minor,
+               version_build: version_build,
+               cap_flags: cap_flags,
+           })
     }
 
     // TODO: Check capabilities first
@@ -154,11 +155,17 @@ impl <'a> Device<'a> {
     }
 }
 
-impl <'a> U2FHidFramedTransport for Device<'a> {
+impl<'a> U2FHidFramedTransport for Device<'a> {
     fn data_read<T: AsMut<[u8]>>(&mut self, buffer: T, timeout: Duration) -> Result<Option<usize>> {
-        self.handle.data().read(buffer, timeout).map_err(|e| e.into())
+        self.handle
+            .data()
+            .read(buffer, timeout)
+            .map_err(|e| e.into())
     }
     fn data_write<T: AsRef<[u8]>>(&mut self, buffer: T) -> Result<usize> {
-        self.handle.data().write(buffer).map_err(|e| e.into())
+        self.handle
+            .data()
+            .write(buffer)
+            .map_err(|e| e.into())
     }
 }

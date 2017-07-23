@@ -26,12 +26,7 @@ fn main() {
         let mut buf = Vec::with_capacity(64);
         buf.extend_from_slice(&buf1);
         buf.extend_from_slice(&buf2);
-        let response = apdu.send_apdu(
-            U2FINS::Register as u8,
-            0,
-            0,
-            &buf
-        );
+        let response = apdu.send_apdu(U2FINS::Register as u8, 0, 0, &buf);
         println!("APDU Response: {:?}", response);
 
     }

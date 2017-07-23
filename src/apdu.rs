@@ -2,16 +2,16 @@ use super::device::Device;
 use super::errors::*;
 use super::HidCmd;
 
- #[derive(Debug)]
+#[derive(Debug)]
 pub struct APDU<'a>(Device<'a>);
 pub type APDUResponse = Vec<u8>;
 
-impl <'a> APDU<'a> {
+impl<'a> APDU<'a> {
     pub fn new(dev: Device<'a>) -> Self {
         APDU(dev)
     }
 
-    //  the request-data are preceded by three length bytes, a byte with value 0 followed by the length of request-data, in big-endian order.
+    // the request-data are preceded by three length bytes, a byte with value 0 followed by the length of request-data, in big-endian order.
     pub fn send_apdu<T: AsRef<[u8]>>(&mut self, cmd: u8, p1: u8, p2: u8, cmd_data: T) -> Result<APDUResponse> {
         use std::io::Write;
         use byteorder::{BigEndian, WriteBytesExt};
@@ -34,7 +34,7 @@ impl <'a> APDU<'a> {
 
         let mut response = self.0.request(HidCmd::Msg as u8, data)?;
         let response_len = response.len();
-        let sw = (response[response_len - 2] as u16) << 8 | (response[response_len  -1] as u16);
+        let sw = (response[response_len - 2] as u16) << 8 | (response[response_len - 1] as u16);
         response.resize(response_len - 2, 0);
         match sw {
             0x9000 => Ok(response), // SW_NO_ERROR
@@ -42,7 +42,7 @@ impl <'a> APDU<'a> {
             0x6985 => Err(ErrorKind::APDUError(sw, "conditions not satisfied", response).into()), // SW_CONDITIONS_NOT_SATISFIED
             0x6d00 => Err(ErrorKind::APDUError(sw, "ins not supported", response).into()), // SW_INS_NOT_SUPPORTED
             0x6e00 => Err(ErrorKind::APDUError(sw, "cla not supported", response).into()), // SW_CLA_NOT_SUPPORTED
-            _ => Err(ErrorKind::Protocol(format!("Unknown APDU status code: {}", sw)).into())
+            _ => Err(ErrorKind::Protocol(format!("Unknown APDU status code: {}", sw)).into()),
         }
     }
 }

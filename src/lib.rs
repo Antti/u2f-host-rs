@@ -2,8 +2,10 @@
 
 extern crate hid;
 extern crate byteorder;
-#[macro_use] extern crate error_chain;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate error_chain;
+#[macro_use]
+extern crate log;
 // #[macro_use] extern crate enum_primitive;
 
 mod device;
@@ -46,7 +48,7 @@ pub enum HidCmd {
     Lock = 0x04,
     Init = 0x06,
     Wink = 0x08,
-    Error = 0x3f
+    Error = 0x3f,
 }
 // }
 
@@ -56,7 +58,7 @@ pub enum U2FINS {
     Authenticate = 0x02,
     Version = 0x03,
     VendorFirst = 0x40,
-    VendorLast = 0x7f
+    VendorLast = 0x7f,
 }
 
 #[cfg(test)]
